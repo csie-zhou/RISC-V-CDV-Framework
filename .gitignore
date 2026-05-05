@@ -1,0 +1,19 @@
+# Verilator / cocotb build
+sim_build/
+dump.vcd
+results.xml
+__pycache__/
+*.pyc
+
+# ISA model build artifacts
+isa_model/libisa.so
+
+# VCS artefacts
+simv
+simv.daidir/
+csrc/
+ucli.key
+AN.DB
+
+# macOS
+.DS_Store
