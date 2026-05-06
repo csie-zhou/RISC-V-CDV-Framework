@@ -115,8 +115,9 @@ class IsaModel:
 
     def reg(self, idx: int) -> int:
         """Read a register directly — for end-of-test state dump."""
-        return self._lib.isa_rd_reg(ctypes.byref(self._state),
-                                    ctypes.c_uint32(idx))
+        if idx == 0:
+            return 0
+        return self._state.regs[idx]
 
     def pc(self) -> int:
         return self._lib.isa_rd_pc(ctypes.byref(self._state))

@@ -99,7 +99,7 @@ async def test_sanity(dut):
     # ── Verify final register state via ISA model ────────────
     log.info("Checking final register state...")
     for reg_idx, expected_val in EXPECTED.items():
-        actual = env.scoreboard.model.reg(reg_idx)
+        actual = env.scoreboard.reg_state[reg_idx]
         assert actual == expected_val, (
             f"x{reg_idx}: expected 0x{expected_val:08x}, "
             f"got 0x{actual:08x}"

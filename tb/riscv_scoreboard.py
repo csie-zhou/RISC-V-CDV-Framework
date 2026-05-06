@@ -18,6 +18,7 @@ class RiscvScoreboard:
     def __init__(self):
         self.log       = logging.getLogger("riscv.scoreboard")
         self.model     = IsaModel()
+        self.reg_state = [0] * 32   # Python-native mirror; ctypes writes unreliable
         self.pass_cnt  = 0
         self.fail_cnt  = 0
         self.total_cnt = 0
@@ -25,6 +26,7 @@ class RiscvScoreboard:
     def reset(self):
         """Reset model state — call before each test."""
         self.model.reset()
+        self.reg_state = [0] * 32
         self.pass_cnt  = 0
         self.fail_cnt  = 0
         self.total_cnt = 0
@@ -84,6 +86,7 @@ class RiscvScoreboard:
         # per-instruction checks are independent (errors don't accumulate).
         if t.rd != 0:
             self.model._state.regs[t.rd] = t.rd_wdata
+            self.reg_state[t.rd] = t.rd_wdata
 
         # All checks passed
         self.log.info(

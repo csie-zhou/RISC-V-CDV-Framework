@@ -1,48 +1,41 @@
-# riscv_driver.py
-# Loads instruction program into Ibex IMEM, releases reset.
-# Passive after that — monitor owns the RVFI bus.
-# Equivalent to riscv_driver.sv in the UVM branch.
+# riscv_driver.py (Week 2 update)
+# Accepts list[InstrItem] from a sequence instead of a raw int list.
 
+import logging
 import cocotb
 from cocotb.triggers import RisingEdge, ClockCycles
-import logging
+from .riscv_types import InstrItem
+
+NOP = 0x0000_0013
 
 class RiscvDriver:
-    """
-    Drives stimulus into the DUT:
-      1. Assert reset for 5 cycles
-      2. Backdoor-write the instruction program into IMEM
-      3. Deassert reset — pipeline starts fetching
-      4. Go passive
-    """
 
     def __init__(self, dut):
         self.dut = dut
         self.log = logging.getLogger("riscv.driver")
 
-    async def load_program(self, program: list[int]):
+    async def load_program(self, program: list[InstrItem] | list[int]):
         """
-        program: list of 32-bit instruction words (index = word address)
+        Accepts either list[InstrItem] (Week 2+) or list[int] (Week 1 compat).
+        Writes encodings into IMEM, releases reset.
         """
         clk = self.dut.clk
-
-        # 1. Assert reset
         self.dut.rst_n.value = 0
         await ClockCycles(clk, 5)
 
-        # 2. Backdoor-write IMEM
-        #    Ibex boot vector is boot_addr_i + 0x80; with boot_addr_i=0
-        #    the reset PC is 0x80 = word offset 32.
-        BOOT_WORD = 0x80 // 4  # 32
-        nop = 0x0000_0013
-        for i in range(256):
-            self.dut.imem[i].value = nop
-        for i, word in enumerate(program):
-            self.dut.imem[BOOT_WORD + i].value = word
+        # Normalise to list of ints
+        words = [
+            item.encoding if isinstance(item, InstrItem) else item
+            for item in program
+        ]
 
-        self.log.info(f"IMEM loaded: {len(program)} instructions")
+        for i, word in enumerate(words[:2048]):
+            self.dut.imem[i].value = word
 
-        # 3. Release reset
+        for i in range(len(words), 2048):
+            self.dut.imem[i].value = NOP
+
+        self.log.info(f"IMEM loaded: {len(words)} instructions")
         await RisingEdge(clk)
         self.dut.rst_n.value = 1
-        self.log.info("Reset released — pipeline fetching")
+        self.log.info("Reset released")

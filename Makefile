@@ -77,6 +77,34 @@ libisa:
 # Pull in cocotb's Makefile rules
 include $(shell cocotb-config --makefiles)/Makefile.sim
 
+# ── Convenience targets ───────────────────────────────────────
+sanity:
+	$(MAKE) MODULE=tests.test_sanity
+
+rand:
+	$(MAKE) MODULE=tests.test_rand \
+	    PLUSARGS="+num_instrs=1000"
+
+rand-hazard:
+	$(MAKE) MODULE=tests.test_rand \
+	    PLUSARGS="+num_instrs=500 +hazard_mode=heavy"
+
+rand-branch:
+	$(MAKE) MODULE=tests.test_rand \
+	    PLUSARGS="+num_instrs=500 +branch_pct=40"
+
+stress:
+	$(MAKE) MODULE=tests.test_stress
+
+# Run all three with 10 different seeds
+regression:
+	@for s in 1 2 3 4 5 6 7 8 9 10; do \
+	    echo "=== seed $$s ==="; \
+	    $(MAKE) MODULE=tests.test_rand \
+	        PLUSARGS="+num_instrs=500 +seed=$$s" || exit 1; \
+	done
+	@echo "=== All seeds passed ==="
+
 waves:
 	gtkwave dump.vcd &
 
@@ -84,4 +112,4 @@ clean::
 	rm -rf sim_build __pycache__ results.xml dump.vcd
 	rm -f isa_model/libisa.so
 
-.PHONY: all libisa waves clean
+.PHONY: all libisa sanity rand rand-hazard rand-branch stress regression waves clean

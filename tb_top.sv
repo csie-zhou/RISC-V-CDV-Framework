@@ -17,7 +17,8 @@ module tb_top;
     always #5 clk = ~clk;
 
     // IMEM / DMEM (cocotb driver writes these via .value deposit)
-    logic [31:0] imem [0:255];
+    // IMEM is 2048 words so rand/stress programs (up to ~1K instrs) fit.
+    logic [31:0] imem [0:2047];
     logic [31:0] dmem [0:255];
     initial begin
         foreach (imem[i]) imem[i] = 32'h0000_0013;
@@ -117,7 +118,9 @@ module tb_top;
             instr_rdata  <= '0;
         end else begin
             instr_rvalid <= instr_req;
-            instr_rdata  <= instr_req ? imem[instr_addr[9:2]] : '0;
+            // Ibex resets to PC = {boot_addr_i[31:8], 8'h80} = 0x80.
+            // Subtract the boot offset so driver can place programs at imem[0].
+            instr_rdata  <= instr_req ? imem[(instr_addr - 32'h80) >> 2] : '0;
         end
     end
 
